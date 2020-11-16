@@ -12,7 +12,7 @@ module id_stage(
     //to es
     output                         ds_to_es_valid,
     output [`DS_TO_ES_BUS_WD -1:0] ds_to_es_bus  ,
-    //to fs
+    //to pfs
     output [`BR_BUS_WD       -1:0] br_bus        ,
     //to rf: for write back
     input  [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus  ,
@@ -93,6 +93,7 @@ assign {
     ms_rf_data      // 31:0
 } = ms_fwd_blk_bus;
 
+wire        br_leaving_ds;
 wire        br_stall;
 wire        br_taken;
 wire [31:0] br_target;
@@ -213,6 +214,7 @@ wire overflow_inst;
 wire [7:0] cp0_addr;
 
 assign br_bus = {
+    br_leaving_ds,
     br_stall,
     br_taken,
     br_target
@@ -493,6 +495,7 @@ assign rt_value[31:24] =
     rf_rdata2  [31:24];
 
 // TODO:
+assign br_leaving_ds = br_taken && ds_ready_go && es_allowin;
 assign br_stall = 1'b0;
 assign ds_is_branch = (inst_beq || inst_bne || inst_jal || inst_jr || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal || inst_j || inst_jalr) && ds_valid;
 

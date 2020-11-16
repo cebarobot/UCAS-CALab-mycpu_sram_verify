@@ -1,7 +1,9 @@
 `ifndef MYCPU_H
     `define MYCPU_H
 
-    `define BR_BUS_WD           34
+    `define BR_BUS_WD           35
+
+    `define PFS_TO_FS_BUS_WD    65
     `define FS_TO_DS_BUS_WD     98
     `define DS_TO_ES_BUS_WD     210
     `define ES_TO_MS_BUS_WD     129
@@ -18,5 +20,7 @@
     `define EX_RI               5'h0a
     `define EX_OV               5'h0c
     `define EX_NO               5'h1f
+
+    `define EX_ENTRY            32'h_bfc00380
 
 `endif
