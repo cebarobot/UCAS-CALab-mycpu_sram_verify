@@ -55,6 +55,7 @@ wire [`MS_FWD_BLK_BUS_WD -1:0] ms_fwd_blk_bus;
 
 wire        fs_inst_buff_full;
 wire        fs_valid;
+wire        ms_data_buff_full;
 
 wire [31:0] cp0_epc;
 wire        ws_ex;
@@ -95,10 +96,33 @@ always @ (posedge clk) begin
             inst_sram_discard <= 2'b00;
         end else if (inst_sram_discard == 2'b10) begin
             inst_sram_discard <= 2'b00;
-    end
+        end
     end
 end
 assign inst_sram_data_ok_discard = inst_sram_data_ok && ~|inst_sram_discard;
+
+// data_sram
+wire        data_waiting_es;
+wire        data_waiting_ms;
+reg  [1:0]  data_sram_discard;
+wire        data_sram_data_ok_discard;
+
+always @ (posedge clk) begin
+    if (reset) begin
+        data_sram_discard <= 2'b00;
+    end else if (ws_ex || ws_eret) begin
+        data_sram_discard <= {data_waiting_es, data_waiting_ms};
+    end else if (data_sram_data_ok) begin
+        if (data_sram_discard == 2'b11) begin
+            data_sram_discard <= 2'b01;
+        end else if (data_sram_discard == 2'b01) begin
+            data_sram_discard <= 2'b00;
+        end else if (data_sram_discard == 2'b10) begin
+            data_sram_discard <= 2'b00;
+        end
+    end
+end
+assign data_sram_data_ok_discard = data_sram_data_ok && ~|data_sram_discard;
 
 // pre-IF stage
 pre_if_stage pre_if_stage(
@@ -119,7 +143,7 @@ pre_if_stage pre_if_stage(
     .inst_sram_addr          (inst_sram_addr),
     .inst_sram_addr_ok       (inst_sram_addr_ok),
     .inst_sram_rdata          (inst_sram_rdata),
-    .inst_sram_data_ok       (inst_sram_data_ok),
+    .inst_sram_data_ok       (inst_sram_data_ok_discard),
     .inst_sram_data_waiting  (inst_waiting_pfs),
     .ws_eret                (ws_eret),
     .ws_ex                  (ws_ex),
@@ -145,7 +169,7 @@ if_stage if_stage(
     .ds_is_branch           (ds_is_branch),     // TODO
     // inst_ram interface
     .inst_sram_rdata          (inst_sram_rdata),
-    .inst_sram_data_ok       (inst_sram_data_ok),
+    .inst_sram_data_ok       (inst_sram_data_ok_discard),
     .inst_sram_data_waiting  (inst_waiting_fs),
     //exception
     .ws_ex                  (ws_ex),
@@ -186,30 +210,38 @@ id_stage id_stage(
 );
 // EXE stage
 exe_stage exe_stage(
-    .clk            (clk            ),
-    .reset          (reset          ),
+    .clk                    (clk            ),
+    .reset                  (reset          ),
     //allowin
-    .ms_allowin     (ms_allowin     ),
-    .es_allowin     (es_allowin     ),
+    .ms_allowin             (ms_allowin     ),
+    .es_allowin             (es_allowin     ),
     //from ds
-    .ds_to_es_valid (ds_to_es_valid ),
-    .ds_to_es_bus   (ds_to_es_bus   ),
+    .ds_to_es_valid         (ds_to_es_valid ),
+    .ds_to_es_bus           (ds_to_es_bus   ),
     //to ms
-    .es_to_ms_valid (es_to_ms_valid ),
-    .es_to_ms_bus   (es_to_ms_bus   ),
+    .es_to_ms_valid         (es_to_ms_valid ),
+    .es_to_ms_bus           (es_to_ms_bus   ),
+    //from ms
+    .ms_data_buff_full      (ms_data_buff_full),
     // data sram interface
-    .data_sram_en   (data_sram_en   ),
-    .data_sram_wen  (data_sram_wen  ),
-    .data_sram_addr (data_sram_addr ),
-    .data_sram_wdata(data_sram_wdata),
+    .data_sram_req          (data_sram_req  ),
+    .data_sram_wr           (data_sram_wr   ),
+    .data_sram_size         (data_sram_size ),
+    .data_sram_wdata        (data_sram_wdata),
+    .data_sram_wstrb        (data_sram_wstrb),
+    .data_sram_addr         (data_sram_addr ),
+    .data_sram_addr_ok      (data_sram_addr_ok),
+    .data_sram_rdata        (data_sram_rdata),
+    .data_sram_data_ok      (data_sram_data_ok_discard),
+    .data_sram_data_waiting (data_waiting_es),
     // forward & block
-    .es_fwd_blk_bus (es_fwd_blk_bus ),
+    .es_fwd_blk_bus         (es_fwd_blk_bus ),
     //exception & block
-    .ws_ex          (ws_ex),
-    .ws_eret        (ws_eret),
-    .ms_ex          (ms_ex),
-    .ms_eret        (ms_eret),
-    .es_inst_mfc0_o (es_inst_mfc0)
+    .ws_ex                  (ws_ex),
+    .ws_eret                (ws_eret),
+    .ms_ex                  (ms_ex),
+    .ms_eret                (ms_eret),
+    .es_inst_mfc0_o         (es_inst_mfc0)
 );
 // MEM stage
 mem_stage mem_stage(
@@ -224,8 +256,12 @@ mem_stage mem_stage(
     //to ws
     .ms_to_ws_valid (ms_to_ws_valid ),
     .ms_to_ws_bus   (ms_to_ws_bus   ),
+    //to es
+    .ms_data_buff_full  (ms_data_buff_full),
     //from data-sram
-    .data_sram_rdata(data_sram_rdata),
+    .data_sram_rdata        (data_sram_rdata),
+    .data_sram_data_ok      (data_sram_data_ok_discard),
+    .data_sram_data_waiting (data_waiting_ms),
     // forward & block
     .ms_fwd_blk_bus (ms_fwd_blk_bus),
     //exception & block

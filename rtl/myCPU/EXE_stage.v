@@ -505,6 +505,8 @@ assign data_sram_size   =
 assign data_sram_addr   =
     (es_inst_lwl || es_inst_swl) ? {es_alu_result[31:2], 2'b0} : es_alu_result[31:0];
 
+assign data_sram_data_waiting = es_valid && es_addr_ok && !es_data_ok;
+
 assign data_sram_wdata  = st_data;
 assign data_sram_wstrb  = st_strb;
 
@@ -535,6 +537,8 @@ assign es_data_ok   = es_data_buff_valid || (ms_data_buff_full && data_sram_data
 assign es_data =
     es_data_buff_valid ?    es_data_buff :
     data_sram_rdata;
+
+assign es_wait_mem = es_valid && es_addr_ok;
 
 // Block & Forward
 assign es_fwd_valid = {4{ es_valid && es_gr_we && !es_res_from_mem }};

@@ -12,8 +12,14 @@ module mem_stage(
     //to ws
     output                         ms_to_ws_valid,
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
+
+    //to es
+    output                         ms_data_buff_full,
+
     //from data-sram
     input  [31                 :0] data_sram_rdata,
+    input                          data_sram_data_ok,
+    input                          data_sram_data_waiting,
 
     // forword from es
     output [`MS_FWD_BLK_BUS_WD -1:0] ms_fwd_blk_bus,
@@ -70,7 +76,14 @@ wire    ms_inst_mtc0;
 
 assign ms_eret = ms_valid & ms_inst_eret;
 
+reg         ms_data_buff_valid;
+reg  [31:0] ms_data_buff;
+wire        ms_data_ok;
+wire [31:0] ms_data;
+
 assign {
+    es_to_ms_data_ok,  //162:162
+    es_to_ms_data   ,  //161:130
     es_to_ms_excode ,  //129:125
     es_to_ms_badvaddr, //124:93
     ms_cp0_addr     ,  //92:85
@@ -125,7 +138,7 @@ assign ms_fwd_blk_bus = {
     ms_rf_data      // 31:0
 };
 
-assign ms_ready_go    = 1'b1;
+assign ms_ready_go    = ms_wait_mem ? ms_data_ok : 1'b1;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go && !ws_eret && !ws_ex;
 always @(posedge clk) begin
@@ -157,7 +170,7 @@ wire [ 3:0] mem_left_strb;
 wire [ 3:0] mem_right_strb;
 
 assign mem_addr = ms_exe_result[1:0];
-assign mem_word = data_sram_rdata;
+assign mem_word = ms_data;
 assign mem_half = mem_addr[1]? mem_word[31:16] : mem_word[15: 0];
 assign mem_byte = mem_addr[0]? mem_half[15: 8] : mem_half[ 7: 0];
 
@@ -204,6 +217,28 @@ assign ms_gr_strb =
     ms_inst_lwl? mem_left_strb :
     ms_inst_lwr? mem_right_strb :
     {4{ms_gr_we}};
+
+always @ (posedge clk) begin
+    if (reset) begin
+        ms_data_buff_valid  <= 1'b0;
+        ms_data_buff        <= 32'h0;
+    end else if (!ms_data_buff_valid && data_sram_data_ok && !ws_allowin) begin
+        ms_data_buff_valid  <= 1'b1;
+        ms_data_buff        <= data_sram_rdata;
+    end else if (ws_allowin || ws_eret || ws_ex) begin
+        ms_data_buff_valid  <= 1'b0;
+        ms_data_buff        <= 32'h0;
+    end
+end
+
+assign ms_data_ok   = es_to_ms_data_ok || ms_data_buff_valid || data_sram_data_ok;
+assign ms_data =
+    es_to_ms_data_ok ?      es_to_ms_data   :
+    ms_data_buff_valid ?    ms_data_buff    :
+    data_sram_rdata;
+
+assign ms_data_buff_full = ms_data_buff_valid;
+assign data_sram_data_waiting    = ms_valid && !ms_data_ok;
 
 
 assign ms_fwd_valid = {4{ ms_valid }} & ms_gr_strb;
