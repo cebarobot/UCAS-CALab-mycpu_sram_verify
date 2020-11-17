@@ -13,10 +13,20 @@ module exe_stage(
     output                         es_to_ms_valid,
     output [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
     // data sram interface
-    output        data_sram_en   ,
-    output [ 3:0] data_sram_wen  ,
-    output [31:0] data_sram_addr ,
-    output [31:0] data_sram_wdata,
+    // output        data_sram_en   ,
+    // output [ 3:0] data_sram_wen  ,
+    // output [31:0] data_sram_addr ,
+    // output [31:0] data_sram_wdata,
+    output          data_sram_req,
+    output          data_sram_wr,
+    output  [ 1:0]  data_sram_size,
+    output  [31:0]  data_sram_wdata,
+    output  [ 3:0]  data_sram_wstrb,
+    output  [31:0]  data_sram_addr,
+    output          data_sram_addr_ok,
+    input   [31:0]  data_sram_rdata,
+    input           data_sram_data_ok,
+    output          data_sram_data_waiting,     // for pipline clean
 
     //block
     output                          es_inst_mfc0_o ,

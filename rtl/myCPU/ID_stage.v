@@ -494,10 +494,9 @@ assign rt_value[31:24] =
     (rf_we       [3] && rf_waddr   == rt)? rf_wdata  [31:24] :
     rf_rdata2  [31:24];
 
-// TODO:
 assign br_leaving_ds = br_taken && ds_ready_go && es_allowin;
-assign br_stall = 1'b0;
 assign ds_is_branch = (inst_beq || inst_bne || inst_jal || inst_jr || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal || inst_j || inst_jalr) && ds_valid;
+assign br_stall = ds_is_branch && !ds_ready_go;
 
 wire judge_bgez;
 wire judge_bgtz;

@@ -184,11 +184,11 @@ mycpu_top cpu(
     .debug_wb_rf_wdata(debug_wb_rf_wdata)
 );
 
-wire        inst_ram_en   ;
-wire [3 :0] inst_ram_wen  ;
-wire [31:0] inst_ram_addr ;
-wire [31:0] inst_ram_wdata;
-wire [31:0] inst_ram_rdata;
+wire        inst_sram_en   ;
+wire [3 :0] inst_sram_wen  ;
+wire [31:0] inst_sram_addr ;
+wire [31:0] inst_sram_wdata;
+wire [31:0] inst_sram_rdata;
 sram_wrap u_inst_sram_wrap(
     .clk              (cpu_clk   ),
     .resetn           (cpu_resetn),  //low active
@@ -204,11 +204,11 @@ sram_wrap u_inst_sram_wrap(
     .rdata           (cpu_inst_rdata  ),
 
     //slave
-    .ram_en          (inst_ram_en     ),
-    .ram_wen         (inst_ram_wen    ),
-    .ram_addr        (inst_ram_addr   ),
-    .ram_wdata       (inst_ram_wdata  ),
-    .ram_rdata       (inst_ram_rdata  ),
+    .ram_en          (inst_sram_en     ),
+    .ram_wen         (inst_sram_wen    ),
+    .ram_addr        (inst_sram_addr   ),
+    .ram_wdata       (inst_sram_wdata  ),
+    .ram_rdata       (inst_sram_rdata  ),
     //from confreg
     .ram_random_mask (ram_random_mask[1:0])
 );
@@ -216,11 +216,11 @@ sram_wrap u_inst_sram_wrap(
 inst_ram inst_ram
 (
     .clka  (cpu_clk            ),   
-    .ena   (inst_ram_en        ),
-    .wea   (inst_ram_wen       ),   //3:0
-    .addra (inst_ram_addr[19:2]),   //17:0
-    .dina  (inst_ram_wdata     ),   //31:0
-    .douta (inst_ram_rdata     )    //31:0
+    .ena   (inst_sram_en        ),
+    .wea   (inst_sram_wen       ),   //3:0
+    .addra (inst_sram_addr[19:2]),   //17:0
+    .dina  (inst_sram_wdata     ),   //31:0
+    .douta (inst_sram_rdata     )    //31:0
 );
 
 bridge_1x2 bridge_1x2(
@@ -259,11 +259,11 @@ bridge_1x2 bridge_1x2(
  );
 
 //data ram
-wire        data_ram_en   ;
-wire [3 :0] data_ram_wen  ;
-wire [31:0] data_ram_addr ;
-wire [31:0] data_ram_wdata;
-wire [31:0] data_ram_rdata;
+wire        data_sram_en   ;
+wire [3 :0] data_sram_wen  ;
+wire [31:0] data_sram_addr ;
+wire [31:0] data_sram_wdata;
+wire [31:0] data_sram_rdata;
 sram_wrap u_data_sram_wrap(
     .clk              (cpu_clk   ),
     .resetn           (cpu_resetn),  //low active
@@ -279,22 +279,22 @@ sram_wrap u_data_sram_wrap(
     .rdata           (data_sram_rdata  ),
 
     //slave
-    .ram_en          (data_ram_en     ),
-    .ram_wen         (data_ram_wen    ),
-    .ram_addr        (data_ram_addr   ),
-    .ram_wdata       (data_ram_wdata  ),
-    .ram_rdata       (data_ram_rdata  ),
+    .ram_en          (data_sram_en     ),
+    .ram_wen         (data_sram_wen    ),
+    .ram_addr        (data_sram_addr   ),
+    .ram_wdata       (data_sram_wdata  ),
+    .ram_rdata       (data_sram_rdata  ),
     //from confreg
     .ram_random_mask (ram_random_mask[3:2])
 );
 data_ram data_ram
 (
     .clka  (cpu_clk            ),   
-    .ena   (data_ram_en        ),
-    .wea   (data_ram_wen       ),   //3:0
-    .addra (data_ram_addr[17:2]),   //15:0
-    .dina  (data_ram_wdata     ),   //31:0
-    .douta (data_ram_rdata     )    //31:0
+    .ena   (data_sram_en        ),
+    .wea   (data_sram_wen       ),   //3:0
+    .addra (data_sram_addr[17:2]),   //15:0
+    .dina  (data_sram_wdata     ),   //31:0
+    .douta (data_sram_rdata     )    //31:0
 );
 
 //confreg

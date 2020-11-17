@@ -115,12 +115,12 @@ pre_if_stage pre_if_stage(
     .br_bus                 (br_bus),
     .fs_valid               (fs_valid),
     // inst_ram interface
-    .inst_ram_req           (inst_sram_req),
-    .inst_ram_addr          (inst_sram_addr),
-    .inst_ram_addr_ok       (inst_sram_addr_ok),
-    .inst_ram_data          (inst_sram_rdata),
-    .inst_ram_data_ok       (inst_sram_data_ok),
-    .inst_ram_data_waiting  (inst_waiting_pfs),
+    .inst_sram_req           (inst_sram_req),
+    .inst_sram_addr          (inst_sram_addr),
+    .inst_sram_addr_ok       (inst_sram_addr_ok),
+    .inst_sram_data          (inst_sram_rdata),
+    .inst_sram_data_ok       (inst_sram_data_ok),
+    .inst_sram_data_waiting  (inst_waiting_pfs),
     .ws_eret                (ws_eret),
     .ws_ex                  (ws_ex),
     .cp0_epc                (cp0_epc)
@@ -144,9 +144,9 @@ if_stage if_stage(
     // delay slot
     .ds_is_branch           (ds_is_branch),     // TODO
     // inst_ram interface
-    .inst_ram_data          (inst_sram_rdata),
-    .inst_ram_data_ok       (inst_sram_data_ok),
-    .inst_ram_data_waiting  (inst_waiting_fs),
+    .inst_sram_data          (inst_sram_rdata),
+    .inst_sram_data_ok       (inst_sram_data_ok),
+    .inst_sram_data_waiting  (inst_waiting_fs),
     //exception
     .ws_ex                  (ws_ex),
     .ws_eret                (ws_eret),

@@ -20,9 +20,9 @@ module if_stage(
     input           ds_is_branch,     // TODO
 
     // inst_ram interface
-    input   [31:0]  inst_ram_data,
-    input           inst_ram_data_ok,
-    output          inst_ram_data_waiting,      // for pipeline clean
+    input   [31:0]  inst_sram_data,
+    input           inst_sram_data_ok,
+    output          inst_sram_data_waiting,      // for pipeline clean
 
     //exception
     input           ws_eret,
@@ -79,24 +79,24 @@ always @ (posedge clk) begin
     if (reset) begin
         fs_inst_buff_valid  <= 1'b0;
         fs_inst_buff        <= 32'h0;
-    end else if (!fs_inst_buff_valid && inst_ram_data_ok && !ds_allowin) begin
+    end else if (!fs_inst_buff_valid && inst_sram_data_ok && !ds_allowin) begin
         fs_inst_buff_valid  <= 1'b1;
-        fs_inst_buff        <= inst_ram_data;
+        fs_inst_buff        <= inst_sram_data;
     end else if (ds_allowin || ws_eret || ws_ex) begin
         fs_inst_buff_valid  <= 1'b0;
         fs_inst_buff        <= 32'h0;
     end
 end
 
-assign fs_inst_ok = pfs_to_fs_inst_ok || fs_inst_buff_valid || inst_ram_data_ok;
+assign fs_inst_ok = pfs_to_fs_inst_ok || fs_inst_buff_valid || inst_sram_data_ok;
 assign fs_inst = 
     pfs_to_fs_inst_ok ?     pfs_to_fs_inst  :
     fs_inst_buff_valid ?    fs_inst_buff    :
-    inst_ram_data;
+    inst_sram_data;
 
 assign fs_inst_buff_full = fs_inst_buff_valid;
 
-assign inst_ram_data_waiting    = fs_valid && !fs_inst_ok;
+assign inst_sram_data_waiting    = fs_valid && !fs_inst_ok;
 
 // lab9
 // ? maybe need to move to pre_IF
