@@ -20,7 +20,7 @@ module pre_if_stage(        // instruction require stage
     output          inst_sram_req,
     output  [31:0]  inst_sram_addr,
     input           inst_sram_addr_ok,
-    input   [31:0]  inst_sram_data,
+    input   [31:0]  inst_sram_rdata,
     input           inst_sram_data_ok,
     output          inst_sram_data_waiting,      // for pipeline clean
 
@@ -133,7 +133,12 @@ assign pfs_pc =
 
 // ram control
 
-assign inst_sram_req             = !pfs_addr_ok_r && !(bd_done && br_stall) && !ws_eret && !ws_ex;
+assign inst_sram_req = 
+    pfs_valid &&
+    // fs_allowin &&
+    !pfs_addr_ok_r && 
+    !(bd_done && br_stall) && 
+    !ws_eret && !ws_ex;
 assign inst_sram_addr            = pfs_pc;
 assign inst_sram_data_waiting    = pfs_addr_ok && !pfs_inst_ok;
 
@@ -154,7 +159,7 @@ always @ (posedge clk) begin
         pfs_inst_buff       <= 32'h0;
     end else if (fs_inst_buff_full && inst_sram_data_ok && !fs_allowin) begin
         pfs_inst_buff_valid <= 1'b1;
-        pfs_inst_buff       <= inst_sram_data;
+        pfs_inst_buff       <= inst_sram_rdata;
     end else if (fs_allowin || ws_eret || ws_ex) begin
         pfs_inst_buff_valid <= 1'b0;
         pfs_inst_buff       <= 32'h0;
@@ -164,7 +169,7 @@ end
 assign pfs_inst_ok  = pfs_inst_buff_valid || (fs_inst_buff_full && inst_sram_data_ok);
 assign pfs_inst = 
     pfs_inst_buff_valid ?   pfs_inst_buff :
-    inst_sram_data;
+    inst_sram_rdata;
 
 
 // ! exception are handled in if_stage now

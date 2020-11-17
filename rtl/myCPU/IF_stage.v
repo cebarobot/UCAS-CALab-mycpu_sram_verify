@@ -20,7 +20,7 @@ module if_stage(
     input           ds_is_branch,     // TODO
 
     // inst_ram interface
-    input   [31:0]  inst_sram_data,
+    input   [31:0]  inst_sram_rdata,
     input           inst_sram_data_ok,
     output          inst_sram_data_waiting,      // for pipeline clean
 
@@ -81,7 +81,7 @@ always @ (posedge clk) begin
         fs_inst_buff        <= 32'h0;
     end else if (!fs_inst_buff_valid && inst_sram_data_ok && !ds_allowin) begin
         fs_inst_buff_valid  <= 1'b1;
-        fs_inst_buff        <= inst_sram_data;
+        fs_inst_buff        <= inst_sram_rdata;
     end else if (ds_allowin || ws_eret || ws_ex) begin
         fs_inst_buff_valid  <= 1'b0;
         fs_inst_buff        <= 32'h0;
@@ -92,7 +92,7 @@ assign fs_inst_ok = pfs_to_fs_inst_ok || fs_inst_buff_valid || inst_sram_data_ok
 assign fs_inst = 
     pfs_to_fs_inst_ok ?     pfs_to_fs_inst  :
     fs_inst_buff_valid ?    fs_inst_buff    :
-    inst_sram_data;
+    inst_sram_rdata;
 
 assign fs_inst_buff_full = fs_inst_buff_valid;
 

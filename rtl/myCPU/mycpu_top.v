@@ -118,7 +118,7 @@ pre_if_stage pre_if_stage(
     .inst_sram_req           (inst_sram_req),
     .inst_sram_addr          (inst_sram_addr),
     .inst_sram_addr_ok       (inst_sram_addr_ok),
-    .inst_sram_data          (inst_sram_rdata),
+    .inst_sram_rdata          (inst_sram_rdata),
     .inst_sram_data_ok       (inst_sram_data_ok),
     .inst_sram_data_waiting  (inst_waiting_pfs),
     .ws_eret                (ws_eret),
@@ -144,7 +144,7 @@ if_stage if_stage(
     // delay slot
     .ds_is_branch           (ds_is_branch),     // TODO
     // inst_ram interface
-    .inst_sram_data          (inst_sram_rdata),
+    .inst_sram_rdata          (inst_sram_rdata),
     .inst_sram_data_ok       (inst_sram_data_ok),
     .inst_sram_data_waiting  (inst_waiting_fs),
     //exception

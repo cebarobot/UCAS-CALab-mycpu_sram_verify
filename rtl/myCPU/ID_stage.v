@@ -108,6 +108,7 @@ wire        src2_is_8;
 wire        res_from_mem;
 wire        gr_we;
 wire        mem_we;
+wire        mem_re;
 wire [ 4:0] dest;
 wire [15:0] imm;
 wire [31:0] rs_value;
@@ -221,46 +222,47 @@ assign br_bus = {
 };
 
 assign ds_to_es_bus = {
-    fs_to_ds_ex ,  //209:209
-    overflow_inst, //208:208
-    ds_excode   ,  //207:203
-    ds_badvaddr ,  //202:171
-    cp0_addr    ,  //170:163
-    ds_ex       ,  //162:162
-    ds_bd       ,  //161:161
-    inst_eret   ,  //160:160
-    inst_syscall,  //159:159
-    inst_mfc0   ,  //158:158
-    inst_mtc0   ,  //157:157
-    inst_lb     ,  //156:156
-    inst_lbu    ,  //155:155
-    inst_lh     ,  //154:154
-    inst_lhu    ,  //153:153
-    inst_lw     ,  //152:152
-    inst_lwl    ,  //151:151
-    inst_lwr    ,  //150:150
-    inst_sb     ,  //149:149
-    inst_sh     ,  //148:148
-    inst_sw     ,  //147:147
-    inst_swl    ,  //146:146
-    inst_swr    ,  //145:145
-    inst_div    ,  //144:144
-    inst_divu   ,  //143:143
-    inst_mult   ,  //142:142
-    inst_multu  ,  //141:141
-    inst_mthi   ,  //140:140
-    inst_mfhi   ,  //139:139
-    inst_mtlo   ,  //138:138
-    inst_mflo   ,  //137:137
-    alu_op      ,  //136:125
-    load_op     ,  //124:124
-    src1_is_sa  ,  //123:123
-    src1_is_pc  ,  //122:122
-    src2_is_imm ,  //121:122
-    src2_is_uimm,  //120:120
-    src2_is_8   ,  //119:119
-    gr_we       ,  //118:118
-    mem_we      ,  //117:117
+    fs_to_ds_ex ,  //210:210
+    overflow_inst, //209:209
+    ds_excode   ,  //208:204
+    ds_badvaddr ,  //203:172
+    cp0_addr    ,  //171:164
+    ds_ex       ,  //163:163
+    ds_bd       ,  //162:162
+    inst_eret   ,  //161:161
+    inst_syscall,  //160:160
+    inst_mfc0   ,  //159:159
+    inst_mtc0   ,  //158:158
+    inst_lb     ,  //157:157
+    inst_lbu    ,  //156:156
+    inst_lh     ,  //155:155
+    inst_lhu    ,  //154:154
+    inst_lw     ,  //153:153
+    inst_lwl    ,  //152:152
+    inst_lwr    ,  //151:151
+    inst_sb     ,  //150:150
+    inst_sh     ,  //149:149
+    inst_sw     ,  //148:148
+    inst_swl    ,  //147:147
+    inst_swr    ,  //146:146
+    inst_div    ,  //145:145
+    inst_divu   ,  //144:144
+    inst_mult   ,  //143:143
+    inst_multu  ,  //142:142
+    inst_mthi   ,  //141:141
+    inst_mfhi   ,  //140:140
+    inst_mtlo   ,  //139:139
+    inst_mflo   ,  //138:138
+    alu_op      ,  //137:126
+    load_op     ,  //125:125
+    src1_is_sa  ,  //124:124
+    src1_is_pc  ,  //123:123
+    src2_is_imm ,  //122:122
+    src2_is_uimm,  //121:122
+    src2_is_8   ,  //120:120
+    gr_we       ,  //119:119
+    mem_we      ,  //118:118
+    mem_re      ,  //117:117
     dest        ,  //116:112
     imm         ,  //111:96
     rs_value    ,  //95 :64
@@ -432,6 +434,7 @@ assign gr_we        = ~inst_sw & ~inst_beq & ~inst_bne & ~inst_jr &
                       ~inst_bgez & ~inst_bgtz & ~inst_blez & ~inst_bltz & ~inst_j & ~inst_sb & ~inst_sh & ~inst_swl & ~inst_swr &
                       ~inst_mtc0 & ~inst_syscall & ~inst_eret & ~inst_break;
 assign mem_we       = inst_sw | inst_sh | inst_sb | inst_swl | inst_swr;
+assign mem_re       = inst_lw | inst_lh | inst_lhu | inst_lb | inst_lbu | inst_lwl | inst_lwr;
 
 assign dest         = dst_is_r31 ? 5'd31 :
                       dst_is_rt  ? rt    : 

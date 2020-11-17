@@ -44,6 +44,7 @@ wire        ms_inst_lhu    ;
 wire        ms_inst_lw     ;
 wire        ms_inst_lwl    ;
 wire        ms_inst_lwr    ;
+wire        ms_wait_mem    ;
 wire        ms_res_from_mem;
 wire        ms_gr_we;
 wire [ 4:0] ms_dest;
@@ -70,22 +71,23 @@ wire    ms_inst_mtc0;
 assign ms_eret = ms_valid & ms_inst_eret;
 
 assign {
-    es_to_ms_excode ,  //128:124
-    es_to_ms_badvaddr, //123:92
-    ms_cp0_addr     ,  //91:84
-    ms_ex           ,  //83:83
-    ms_bd           ,  //82:82
-    ms_inst_eret    ,  //81:81
-    ms_inst_syscall ,  //80:80
-    ms_inst_mfc0    ,  //79:79
-    ms_inst_mtc0    ,  //78:78
-    ms_inst_lb      ,  //77:77
-    ms_inst_lbu     ,  //76:76
-    ms_inst_lh      ,  //75:75
-    ms_inst_lhu     ,  //74:74
-    ms_inst_lw      ,  //73:73
-    ms_inst_lwl     ,  //72:72
-    ms_inst_lwr     ,  //71:71
+    es_to_ms_excode ,  //129:125
+    es_to_ms_badvaddr, //124:93
+    ms_cp0_addr     ,  //92:85
+    ms_ex           ,  //84:84
+    ms_bd           ,  //83:83
+    ms_inst_eret    ,  //82:82
+    ms_inst_syscall ,  //81:81
+    ms_inst_mfc0    ,  //80:80
+    ms_inst_mtc0    ,  //79:79
+    ms_inst_lb      ,  //78:78
+    ms_inst_lbu     ,  //77:77
+    ms_inst_lh      ,  //76:76
+    ms_inst_lhu     ,  //75:75
+    ms_inst_lw      ,  //74:74
+    ms_inst_lwl     ,  //73:73
+    ms_inst_lwr     ,  //72:72
+    ms_wait_mem     ,  //71:71
     ms_res_from_mem,  //70:70
     ms_gr_we       ,  //69:69
     ms_dest        ,  //68:64

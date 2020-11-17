@@ -12,6 +12,8 @@ module exe_stage(
     //to ms
     output                         es_to_ms_valid,
     output [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
+    // from ms
+    input                          ms_data_buff_full,
     // data sram interface
     // output        data_sram_en   ,
     // output [ 3:0] data_sram_wen  ,
@@ -23,7 +25,7 @@ module exe_stage(
     output  [31:0]  data_sram_wdata,
     output  [ 3:0]  data_sram_wstrb,
     output  [31:0]  data_sram_addr,
-    output          data_sram_addr_ok,
+    input           data_sram_addr_ok,
     input   [31:0]  data_sram_rdata,
     input           data_sram_data_ok,
     output          data_sram_data_waiting,     // for pipline clean
@@ -83,6 +85,7 @@ wire        es_src2_is_imm;
 wire        es_src2_is_8  ;
 wire        es_gr_we      ;
 wire        es_mem_we     ;
+wire        es_mem_re     ;
 wire [ 4:0] es_dest       ;
 wire [15:0] es_imm        ;
 wire [31:0] es_rs_value   ;
@@ -107,46 +110,47 @@ wire [31:0] ds_to_es_badvaddr;
 
 
 assign {
-    fs_to_ds_ex  ,    //209:209
-    overflow_inst,    //208:208
-    ds_to_es_excode,  //207:203
-    ds_to_es_badvaddr, //202:171
-    es_cp0_addr    ,  //170:163
-    ds_to_es_ex          ,  //162:162
-    ds_to_es_bd          ,  //161:161
-    es_inst_eret   ,  //160:160
-    es_inst_syscall,  //159:159
-    es_inst_mfc0   ,  //158:158
-    es_inst_mtc0   ,  //157:157
-    es_inst_lb     ,  //156:156
-    es_inst_lbu    ,  //155:155
-    es_inst_lh     ,  //154:154
-    es_inst_lhu    ,  //153:153
-    es_inst_lw     ,  //152:152
-    es_inst_lwl    ,  //151:151
-    es_inst_lwr    ,  //150:150
-    es_inst_sb     ,  //149:149
-    es_inst_sh     ,  //148:148
-    es_inst_sw     ,  //147:147
-    es_inst_swl    ,  //146:146
-    es_inst_swr    ,  //145:145
-    es_inst_div    ,  //144:144
-    es_inst_divu   ,  //143:143
-    es_inst_mult   ,  //142:142
-    es_inst_multu  ,  //141:141
-    es_inst_mthi   ,  //140:140
-    es_inst_mfhi   ,  //139:139
-    es_inst_mtlo   ,  //138:138
-    es_inst_mflo   ,  //137:137
-    es_alu_op      ,  //136:125
-    es_load_op     ,  //124:124
-    es_src1_is_sa  ,  //123:123
-    es_src1_is_pc  ,  //122:122
-    es_src2_is_imm ,  //121:121
-    es_src2_is_uimm , //120:120
-    es_src2_is_8   ,  //119:119
-    es_gr_we       ,  //118:118
-    es_mem_we      ,  //117:117
+    fs_to_ds_ex  ,    //210:210
+    overflow_inst,    //209:209
+    ds_to_es_excode,  //208:204
+    ds_to_es_badvaddr, //203:172
+    es_cp0_addr    ,  //171:164
+    ds_to_es_ex    ,  //163:163
+    ds_to_es_bd    ,  //162:162
+    es_inst_eret   ,  //161:161
+    es_inst_syscall,  //160:160
+    es_inst_mfc0   ,  //159:159
+    es_inst_mtc0   ,  //158:158
+    es_inst_lb     ,  //157:157
+    es_inst_lbu    ,  //156:156
+    es_inst_lh     ,  //155:155
+    es_inst_lhu    ,  //154:154
+    es_inst_lw     ,  //153:153
+    es_inst_lwl    ,  //152:152
+    es_inst_lwr    ,  //151:151
+    es_inst_sb     ,  //150:150
+    es_inst_sh     ,  //149:149
+    es_inst_sw     ,  //148:148
+    es_inst_swl    ,  //147:147
+    es_inst_swr    ,  //146:146
+    es_inst_div    ,  //145:145
+    es_inst_divu   ,  //144:144
+    es_inst_mult   ,  //143:143
+    es_inst_multu  ,  //142:142
+    es_inst_mthi   ,  //141:141
+    es_inst_mfhi   ,  //140:140
+    es_inst_mtlo   ,  //139:139
+    es_inst_mflo   ,  //138:138
+    es_alu_op      ,  //137:126
+    es_load_op     ,  //125:125
+    es_src1_is_sa  ,  //124:124
+    es_src1_is_pc  ,  //123:123
+    es_src2_is_imm ,  //122:122
+    es_src2_is_uimm,  //121:121
+    es_src2_is_8   ,  //120:120
+    es_gr_we       ,  //119:119
+    es_mem_we      ,  //118:118
+    es_mem_re      ,  //117:117
     es_dest        ,  //116:112
     es_imm         ,  //111:96
     es_rs_value    ,  //95 :64
@@ -159,7 +163,16 @@ wire [31:0] es_alu_src2   ;
 wire [31:0] es_alu_result ;
 wire [31:0] es_exe_result;
 
+wire    es_wait_mem;                    // TODO
 wire    es_res_from_mem;
+
+reg         es_addr_ok_r;
+wire        es_addr_ok;
+
+reg         es_data_buff_valid;
+reg  [31:0] es_data_buff;
+wire        es_data_ok;
+wire [31:0] es_data;
 
 assign es_res_from_mem  = es_load_op;
 assign es_res_from_LO   = es_inst_mflo;
@@ -172,22 +185,25 @@ assign es_exe_result =
     es_alu_result;
 
 assign es_to_ms_bus = {
-    es_excode       ,  //128:124
-    es_badvaddr     ,  //123:92
-    es_cp0_addr     ,  //91:84
-    es_ex           ,  //83:83
-    es_bd           ,  //82:82
-    es_inst_eret    ,  //81:81
-    es_inst_syscall ,  //80:80
-    es_inst_mfc0    ,  //79:79
-    es_inst_mtc0    ,  //78:78
-    es_inst_lb      ,  //77:77
-    es_inst_lbu     ,  //76:76
-    es_inst_lh      ,  //75:75
-    es_inst_lhu     ,  //74:74
-    es_inst_lw      ,  //73:73
-    es_inst_lwl     ,  //72:72
-    es_inst_lwr     ,  //71:71
+    es_data_ok      ,  //162:162
+    es_data         ,  //161:130
+    es_excode       ,  //129:125
+    es_badvaddr     ,  //124:93
+    es_cp0_addr     ,  //92:85
+    es_ex           ,  //84:84
+    es_bd           ,  //83:83
+    es_inst_eret    ,  //82:82
+    es_inst_syscall ,  //81:81
+    es_inst_mfc0    ,  //80:80
+    es_inst_mtc0    ,  //79:79
+    es_inst_lb      ,  //78:78
+    es_inst_lbu     ,  //77:77
+    es_inst_lh      ,  //76:76
+    es_inst_lhu     ,  //75:75
+    es_inst_lw      ,  //74:74
+    es_inst_lwl     ,  //73:73
+    es_inst_lwr     ,  //72:72
+    es_wait_mem     ,  //71:71
     es_res_from_mem ,  //70:70
     es_gr_we        ,  //69:69
     es_dest         ,  //68:64
@@ -400,6 +416,10 @@ wire [ 3:0] sb_strb;
 wire [ 3:0] swl_strb;
 wire [ 3:0] swr_strb;
 
+wire [ 1:0] lwl_swl_size;
+wire [ 1:0] lwr_swr_size;
+
+
 assign st_addr = es_alu_result[1:0];
 
 assign st_data = 
@@ -452,11 +472,69 @@ assign swr_strb =
     ( {4{st_addr == 2'b10}} & 4'b1100 ) |
     ( {4{st_addr == 2'b11}} & 4'b1000 );
 
+assign lwl_swl_size =
+    ( {2{st_addr == 2'h0}} & 2'h0 ) |
+    ( {2{st_addr == 2'h1}} & 2'h1 ) |
+    ( {2{st_addr == 2'h2}} & 2'h2 ) |
+    ( {2{st_addr == 2'h3}} & 2'h2 );
+
+assign lwr_swr_size =
+    ( {2{st_addr == 2'h0}} & 2'h2 ) |
+    ( {2{st_addr == 2'h1}} & 2'h2 ) |
+    ( {2{st_addr == 2'h2}} & 2'h1 ) |
+    ( {2{st_addr == 2'h3}} & 2'h0 );
+
 // SRAM
-assign data_sram_en    = 1'b1;
-assign data_sram_wen   = (es_mem_we && !no_store && es_valid)? st_strb : 4'h0;
-assign data_sram_addr  = {es_alu_result[31:2], 2'b0};
-assign data_sram_wdata = st_data;
+// TODO
+// assign data_sram_en    = 1'b1;
+// assign data_sram_wen   = (es_mem_we && !no_store && es_valid)? st_strb : 4'h0;
+// assign data_sram_addr  = {es_alu_result[31:2], 2'b0};
+// assign data_sram_wdata = st_data;
+
+assign data_sram_req = 
+    es_valid &&
+    // ms_allowin &&
+    (es_mem_we || es_mem_re) && !no_store;
+assign data_sram_wr     = es_mem_we;
+assign data_sram_size   =
+    ( {2{es_inst_lw || es_inst_sw}}                 & 2'h2          ) |
+    ( {2{es_inst_lh || es_inst_lhu || es_inst_sh}}  & 2'h1          ) |
+    ( {2{es_inst_lb || es_inst_lbu || es_inst_sb}}  & 2'h0          ) |
+    ( {2{es_inst_lwl || es_inst_swl}}               & lwl_swl_size  ) |
+    ( {2{es_inst_lwr || es_inst_swr}}               & lwr_swr_size  );
+assign data_sram_addr   =
+    (es_inst_lwl || es_inst_swl) ? {es_alu_result[31:2], 2'b0} : es_alu_result[31:0];
+
+assign data_sram_wdata  = st_data;
+assign data_sram_wstrb  = st_strb;
+
+always @ (posedge clk) begin
+    if (reset) begin
+        es_addr_ok_r <= 1'b0;
+    end else if (data_sram_addr_ok && !ms_allowin) begin
+        es_addr_ok_r <= 1'b1;
+    end else if (ms_allowin) begin
+        es_addr_ok_r <= 1'b1;
+    end
+end
+assign es_addr_ok   = data_sram_addr_ok || es_addr_ok_r;
+
+always @ (posedge clk) begin
+    if (reset) begin
+        es_data_buff_valid  <= 1'b0;
+        es_data_buff        <= 32'h0;
+    end else if (ms_data_buff_full && data_sram_data_ok && !ms_allowin) begin
+        es_data_buff_valid  <= 1'b1;
+        es_data_buff        <= data_sram_rdata;
+    end else if (ms_allowin || no_store) begin
+        es_data_buff_valid  <= 1'b0;
+        es_data_buff        <= 32'h0;
+    end
+end
+assign es_data_ok   = es_data_buff_valid || (ms_data_buff_full && data_sram_data_ok);
+assign es_data =
+    es_data_buff_valid ?    es_data_buff :
+    data_sram_rdata;
 
 // Block & Forward
 assign es_fwd_valid = {4{ es_valid && es_gr_we && !es_res_from_mem }};
@@ -467,8 +545,9 @@ assign es_blk_valid = es_valid && es_res_from_mem && !ws_eret && !ws_ex;
 
 // Pipeline
 assign es_ready_go    = 
-    es_inst_div  && !ws_eret && !ws_ex    ? signed_dout_tvalid || signed_divider_done :
-    es_inst_divu && !ws_eret && !ws_ex   ? unsigned_dout_tvalid || unsigned_divider_done :
+    (es_inst_div  && !ws_eret && !ws_ex) ? signed_dout_tvalid || signed_divider_done :
+    (es_inst_divu && !ws_eret && !ws_ex) ? unsigned_dout_tvalid || unsigned_divider_done :
+    (es_mem_we || es_mem_re            ) ? es_addr_ok :
     1'b1;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go && !ws_eret && !ws_ex;
