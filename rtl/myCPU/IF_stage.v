@@ -16,9 +16,6 @@ module if_stage(
     // to pfs
     output          fs_inst_buff_full,
 
-    // delay slot
-    input           ds_is_branch,     // TODO
-
     // inst_ram interface
     input   [31:0]  inst_sram_rdata,
     input           inst_sram_data_ok,
@@ -44,7 +41,6 @@ assign {
 } = pfs_to_fs_bus_r;
 
 wire fs_ex;
-wire fs_bd;                     // TODO
 wire [31:0] fs_badvaddr;
 
 // ram
@@ -54,8 +50,7 @@ wire        fs_inst_ok;
 wire [31:0] fs_inst;
 
 assign fs_to_ds_bus = {
-    fs_ex,       //97:97
-    fs_bd,       //96:96
+    fs_ex,       //96:96
     fs_badvaddr, //95:64  
     fs_inst,     //63:32
     fs_pc        //31:0
@@ -103,7 +98,6 @@ assign inst_sram_data_waiting    = fs_valid && !fs_inst_ok;
 wire addr_error;
 assign addr_error = (fs_pc[1:0] != 2'b0);
 assign fs_ex = addr_error && fs_valid;
-assign fs_bd = ds_is_branch;    
 assign fs_badvaddr = fs_pc;
 
 endmodule

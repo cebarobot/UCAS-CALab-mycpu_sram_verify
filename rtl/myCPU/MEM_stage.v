@@ -242,6 +242,7 @@ assign data_sram_data_waiting    = ms_valid && !ms_data_ok;
 
 
 assign ms_fwd_valid = {4{ ms_valid }} & ms_gr_strb;
+assign ms_blk_valid = ms_to_ws_valid && ms_res_from_mem && !ws_eret && !ws_ex;
 assign ms_rf_dest   = ms_dest;
 assign ms_rf_data   = ms_final_result;
 

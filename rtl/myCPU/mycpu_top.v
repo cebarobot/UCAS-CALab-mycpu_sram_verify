@@ -67,7 +67,6 @@ wire        ms_ex;
 wire        ms_eret;
 wire        ms_inst_mfc0;
 wire        es_inst_mfc0;
-wire        ds_is_branch;
 
 wire [31:0] cp0_status;
 wire [31:0] cp0_cause;
@@ -165,8 +164,6 @@ if_stage if_stage(
     .fs_to_ds_bus           (fs_to_ds_bus),
     // to pfs
     .fs_inst_buff_full      (fs_inst_buff_full),
-    // delay slot
-    .ds_is_branch           (ds_is_branch),     // TODO
     // inst_ram interface
     .inst_sram_rdata          (inst_sram_rdata),
     .inst_sram_data_ok       (inst_sram_data_ok_discard),
@@ -196,8 +193,6 @@ id_stage id_stage(
     // forward & block
     .es_fwd_blk_bus (es_fwd_blk_bus ),
     .ms_fwd_blk_bus (ms_fwd_blk_bus ),
-    // delay slot
-    .ds_is_branch   (ds_is_branch   ),
     //exception & block
     .ws_ex          (ws_ex),
     .ws_eret     (ws_eret),

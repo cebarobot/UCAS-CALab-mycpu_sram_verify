@@ -16,9 +16,6 @@ module id_stage(
     output [`BR_BUS_WD       -1:0] br_bus        ,
     //to rf: for write back
     input  [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus  ,
-
-    // delay slot
-    output                          ds_is_branch,
     
     // forword & block from es
     input  [`ES_FWD_BLK_BUS_WD -1:0] es_fwd_blk_bus,
@@ -50,12 +47,10 @@ wire [31:0] fs_to_ds_badvaddr;
 wire [31:0] ds_inst;
 wire [31:0] ds_pc  ;
 wire        ds_ex;
-wire        ds_bd;
 wire [31:0] ds_badvaddr;
 wire [ 4:0] ds_excode;
 assign {
     fs_to_ds_ex,
-    ds_bd,
     ds_badvaddr,
     ds_inst,
     ds_pc
@@ -212,8 +207,11 @@ wire        rs_eq_rt;
 
 wire overflow_inst;
 
-wire [7:0] cp0_addr;
+wire [ 7:0] cp0_addr;
 
+wire        ds_is_branch;
+wire        ds_is_bd;
+reg         ds_is_bd_r;
 assign br_bus = {
     br_leaving_ds,
     br_stall,
@@ -228,7 +226,7 @@ assign ds_to_es_bus = {
     ds_badvaddr ,  //203:172
     cp0_addr    ,  //171:164
     ds_ex       ,  //163:163
-    ds_bd       ,  //162:162
+    ds_is_bd    ,  //162:162
     inst_eret   ,  //161:161
     inst_syscall,  //160:160
     inst_mfc0   ,  //159:159
@@ -501,6 +499,16 @@ assign br_leaving_ds = br_taken && ds_ready_go && es_allowin;
 assign ds_is_branch = (inst_beq || inst_bne || inst_jal || inst_jr || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal || inst_j || inst_jalr) && ds_valid;
 assign br_stall = ds_is_branch && !ds_ready_go;
 
+assign ds_is_bd = ds_valid && ds_is_bd_r;
+
+always @ (posedge clk) begin
+    if (reset) begin
+        ds_is_bd_r <= 1'b0;
+    end else if (ds_to_es_valid && es_allowin) begin
+        ds_is_bd_r <= ds_is_branch;
+    end
+end
+
 wire judge_bgez;
 wire judge_bgtz;
 
@@ -522,8 +530,6 @@ assign br_taken = (
     inst_j                        ||
     inst_jalr
 ) && ds_valid;
-
-//assign ds_bd = br_taken;
 
 assign br_target = (inst_beq || inst_bne || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal) ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr || inst_jalr)              ? rs_value :
