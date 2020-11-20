@@ -83,9 +83,10 @@ wire [ 3:0] ms_fwd_valid;
 wire [ 4:0] ms_rf_dest;
 wire [31:0] ms_rf_data;
 assign {
-    ms_fwd_valid,   // 40:37
-    ms_rf_dest,     // 36:32
-    ms_rf_data      // 31:0
+    ms_fwd_valid,   // 41:38
+    ms_rf_dest,     // 37:33
+    ms_rf_data,     // 32:1
+    ms_blk_valid    // 0:0
 } = ms_fwd_blk_bus;
 
 wire        br_leaving_ds;
@@ -276,7 +277,7 @@ assign mfc0_block = (es_inst_mfc0 && (es_rf_dest == rs || es_rf_dest == rt)) ||
                     (ws_inst_mfc0 && (ws_rf_dest == rs || ws_rf_dest == rt));
 
 assign ds_ready_go    = !(
-   mfc0_block || (es_blk_valid  && (es_rf_dest == rs || es_rf_dest == rt))
+   mfc0_block || (es_blk_valid  && (es_rf_dest == rs || es_rf_dest == rt)) || (ms_blk_valid && (ms_rf_dest == rs || ms_rf_dest == rt))
 );
 
 assign ds_allowin     = !ds_valid || ds_ready_go && es_allowin;

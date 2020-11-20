@@ -10,7 +10,7 @@
     `define MS_TO_WS_BUS_WD     124
     `define WS_TO_RF_BUS_WD     41
     `define ES_FWD_BLK_BUS_WD   42
-    `define MS_FWD_BLK_BUS_WD   41
+    `define MS_FWD_BLK_BUS_WD   42
 
     `define EX_INT              5'h00
     `define EX_ADEL             5'h04

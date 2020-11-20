@@ -131,11 +131,13 @@ assign ms_to_ws_bus = {
 wire [ 3:0] ms_fwd_valid;
 wire [ 4:0] ms_rf_dest;
 wire [31:0] ms_rf_data;
+wire        ms_blk_valid;
 
 assign ms_fwd_blk_bus = {
-    ms_fwd_valid,   // 40:37
-    ms_rf_dest,     // 36:32
-    ms_rf_data      // 31:0
+    ms_fwd_valid,   // 41:38
+    ms_rf_dest,     // 37:33
+    ms_rf_data,     // 32:1
+    ms_blk_valid    // 0:0
 };
 
 assign ms_ready_go    = ms_wait_mem ? ms_data_ok : 1'b1;
@@ -241,8 +243,8 @@ assign ms_data_buff_full = ms_data_buff_valid;
 assign data_sram_data_waiting    = ms_valid && !ms_data_ok;
 
 
-assign ms_fwd_valid = {4{ ms_valid }} & ms_gr_strb;
-assign ms_blk_valid = ms_to_ws_valid && ms_res_from_mem && !ws_eret && !ws_ex;
+assign ms_fwd_valid = {4{ ms_to_ws_valid }} & ms_gr_strb;
+assign ms_blk_valid = ms_valid && ms_res_from_mem && !ms_ready_go && !ws_eret && !ws_ex;
 assign ms_rf_dest   = ms_dest;
 assign ms_rf_data   = ms_final_result;
 
