@@ -80,7 +80,7 @@ assign {
     br_taken_w,
     br_target_w
 } = br_bus;
-assign br_done_w = fs_valid;
+assign bd_done_w = fs_valid;
 
 wire   target_leaving_pfs;
 assign target_leaving_pfs = br_taken && pfs_to_fs_valid && fs_allowin && bd_done;
@@ -91,12 +91,12 @@ always @ (posedge clk) begin
     if (reset) begin
         br_taken_r  <= 1'b0;
         br_target_r <= 32'h0;
+    end else if (target_leaving_pfs || ws_eret || ws_ex) begin
+        br_taken_r  <= 1'b0;
+        br_target_r <= 32'h0;
     end else if (br_leaving_ds) begin
         br_taken_r  <= br_taken_w;
         br_target_r <= br_target_w;
-    end else if (target_leaving_pfs || ws_eret || ws_ex) begin
-        br_target_r <= 1'b0;
-        br_target_r <= 32'h0;
     end
 
     if (reset) begin
@@ -117,7 +117,7 @@ assign bd_done      = bd_done_r || bd_done_w;
 // pc control
 always @ (posedge clk) begin
     if (reset) begin
-        seq_pc <= 32'h0;
+        seq_pc <= 32'h_bfc00000;
     end else if (pfs_ready_go && fs_allowin) begin
         seq_pc <= pfs_pc + 32'h4;
     end else if (ws_eret) begin
@@ -145,19 +145,19 @@ assign inst_sram_data_waiting    = pfs_addr_ok && !pfs_inst_ok;
 always @ (posedge clk) begin
     if (reset) begin
         pfs_addr_ok_r <= 1'b0;
-    end else if (inst_sram_addr_ok && !fs_allowin) begin
+    end else if (inst_sram_req && inst_sram_addr_ok && !fs_allowin) begin
         pfs_addr_ok_r <= 1'b1;
     end else if (fs_allowin || ws_eret || ws_ex) begin
         pfs_addr_ok_r <= 1'b0;
     end
 end
-assign pfs_addr_ok  = inst_sram_addr_ok || pfs_addr_ok_r;
+assign pfs_addr_ok  = (inst_sram_req && inst_sram_addr_ok) || pfs_addr_ok_r;
 
 always @ (posedge clk) begin
     if (reset) begin
         pfs_inst_buff_valid <= 1'b0;
         pfs_inst_buff       <= 32'h0;
-    end else if (fs_inst_buff_full && inst_sram_data_ok && !fs_allowin) begin
+    end else if (fs_inst_buff_full && inst_sram_addr_ok && inst_sram_data_ok && !fs_allowin) begin
         pfs_inst_buff_valid <= 1'b1;
         pfs_inst_buff       <= inst_sram_rdata;
     end else if (fs_allowin || ws_eret || ws_ex) begin
@@ -166,7 +166,7 @@ always @ (posedge clk) begin
     end
 end
 
-assign pfs_inst_ok  = pfs_inst_buff_valid || (fs_inst_buff_full && inst_sram_data_ok);
+assign pfs_inst_ok  = pfs_inst_buff_valid || (fs_inst_buff_full && inst_sram_addr_ok && inst_sram_data_ok);
 assign pfs_inst = 
     pfs_inst_buff_valid ?   pfs_inst_buff :
     inst_sram_rdata;

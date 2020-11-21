@@ -164,6 +164,7 @@ if_stage if_stage(
     .fs_to_ds_bus           (fs_to_ds_bus),
     // to pfs
     .fs_inst_buff_full      (fs_inst_buff_full),
+    .fs_valid_o             (fs_valid),
     // inst_ram interface
     .inst_sram_rdata          (inst_sram_rdata),
     .inst_sram_data_ok       (inst_sram_data_ok_discard),

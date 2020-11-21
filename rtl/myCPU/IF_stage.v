@@ -15,6 +15,7 @@ module if_stage(
 
     // to pfs
     output          fs_inst_buff_full,
+    output          fs_valid_o,
 
     // inst_ram interface
     input   [31:0]  inst_sram_rdata,
@@ -67,6 +68,10 @@ always @(posedge clk) begin
     end else if (fs_allowin) begin
         fs_valid <= pfs_to_fs_valid;
     end
+
+    if (pfs_to_fs_valid && fs_allowin) begin
+        pfs_to_fs_bus_r <= pfs_to_fs_bus;
+    end
 end
 
 // ram
@@ -74,7 +79,7 @@ always @ (posedge clk) begin
     if (reset) begin
         fs_inst_buff_valid  <= 1'b0;
         fs_inst_buff        <= 32'h0;
-    end else if (!fs_inst_buff_valid && inst_sram_data_ok && !ds_allowin) begin
+    end else if (!fs_inst_buff_valid && fs_valid && inst_sram_data_ok && !ds_allowin) begin
         fs_inst_buff_valid  <= 1'b1;
         fs_inst_buff        <= inst_sram_rdata;
     end else if (ds_allowin || ws_eret || ws_ex) begin
@@ -83,13 +88,14 @@ always @ (posedge clk) begin
     end
 end
 
-assign fs_inst_ok = pfs_to_fs_inst_ok || fs_inst_buff_valid || inst_sram_data_ok;
+assign fs_inst_ok = pfs_to_fs_inst_ok || fs_inst_buff_valid || (fs_valid && inst_sram_data_ok);
 assign fs_inst = 
     pfs_to_fs_inst_ok ?     pfs_to_fs_inst  :
     fs_inst_buff_valid ?    fs_inst_buff    :
     inst_sram_rdata;
 
 assign fs_inst_buff_full = fs_inst_buff_valid;
+assign fs_valid_o = fs_valid;
 
 assign inst_sram_data_waiting    = fs_valid && !fs_inst_ok;
 

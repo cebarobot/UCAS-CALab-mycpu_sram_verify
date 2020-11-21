@@ -494,6 +494,7 @@ assign lwr_swr_size =
 assign data_sram_req = 
     es_valid &&
     // ms_allowin &&
+    !es_addr_ok_r && 
     (es_mem_we || es_mem_re) && !no_store;
 assign data_sram_wr     = es_mem_we;
 assign data_sram_size   =
@@ -513,19 +514,19 @@ assign data_sram_wstrb  = st_strb;
 always @ (posedge clk) begin
     if (reset) begin
         es_addr_ok_r <= 1'b0;
-    end else if (data_sram_addr_ok && !ms_allowin) begin
+    end else if (data_sram_req && data_sram_addr_ok && !ms_allowin) begin
         es_addr_ok_r <= 1'b1;
     end else if (ms_allowin) begin
-        es_addr_ok_r <= 1'b1;
+        es_addr_ok_r <= 1'b0;
     end
 end
-assign es_addr_ok   = data_sram_addr_ok || es_addr_ok_r;
+assign es_addr_ok   = (data_sram_req && data_sram_addr_ok) || es_addr_ok_r;
 
 always @ (posedge clk) begin
     if (reset) begin
         es_data_buff_valid  <= 1'b0;
         es_data_buff        <= 32'h0;
-    end else if (ms_data_buff_full && data_sram_data_ok && !ms_allowin) begin
+    end else if (ms_data_buff_full && es_addr_ok && data_sram_data_ok && !ms_allowin) begin
         es_data_buff_valid  <= 1'b1;
         es_data_buff        <= data_sram_rdata;
     end else if (ms_allowin || no_store) begin
@@ -533,7 +534,7 @@ always @ (posedge clk) begin
         es_data_buff        <= 32'h0;
     end
 end
-assign es_data_ok   = es_data_buff_valid || (ms_data_buff_full && data_sram_data_ok);
+assign es_data_ok   = es_data_buff_valid || (ms_data_buff_full && es_addr_ok && data_sram_data_ok);
 assign es_data =
     es_data_buff_valid ?    es_data_buff :
     data_sram_rdata;

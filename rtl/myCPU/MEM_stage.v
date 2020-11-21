@@ -68,6 +68,7 @@ wire [31:0] es_to_ms_badvaddr;
 assign ms_excode = es_to_ms_excode;
 assign ms_badvaddr = es_to_ms_badvaddr;
 
+wire    ms_ex;
 wire    ms_bd;
 wire    ms_inst_eret;
 wire    ms_inst_syscall;
@@ -80,6 +81,9 @@ reg         ms_data_buff_valid;
 reg  [31:0] ms_data_buff;
 wire        ms_data_ok;
 wire [31:0] ms_data;
+
+wire        es_to_ms_data_ok;
+wire [31:0] es_to_ms_data;
 
 assign {
     es_to_ms_data_ok,  //162:162
@@ -224,7 +228,7 @@ always @ (posedge clk) begin
     if (reset) begin
         ms_data_buff_valid  <= 1'b0;
         ms_data_buff        <= 32'h0;
-    end else if (!ms_data_buff_valid && data_sram_data_ok && !ws_allowin) begin
+    end else if (!ms_data_buff_valid && ms_valid && data_sram_data_ok && !ws_allowin) begin
         ms_data_buff_valid  <= 1'b1;
         ms_data_buff        <= data_sram_rdata;
     end else if (ws_allowin || ws_eret || ws_ex) begin
@@ -233,7 +237,7 @@ always @ (posedge clk) begin
     end
 end
 
-assign ms_data_ok   = es_to_ms_data_ok || ms_data_buff_valid || data_sram_data_ok;
+assign ms_data_ok   = es_to_ms_data_ok || ms_data_buff_valid || (ms_wait_mem && data_sram_data_ok);
 assign ms_data =
     es_to_ms_data_ok ?      es_to_ms_data   :
     ms_data_buff_valid ?    ms_data_buff    :
