@@ -14,12 +14,12 @@ module mem_stage(
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
 
     //to es
-    output                         ms_data_buff_full,
+    output                         ms_inst_unable,
 
     //from data-sram
     input  [31                 :0] data_sram_rdata,
     input                          data_sram_data_ok,
-    input                          data_sram_data_waiting,
+    input                          ms_data_waiting,
 
     // forword from es
     output [`MS_FWD_BLK_BUS_WD -1:0] ms_fwd_blk_bus,
@@ -243,8 +243,8 @@ assign ms_data =
     ms_data_buff_valid ?    ms_data_buff    :
     data_sram_rdata;
 
-assign ms_data_buff_full = ms_data_buff_valid;
-assign data_sram_data_waiting    = ms_valid && !ms_data_ok;
+assign ms_data_waiting  = ms_valid && !ms_data_ok;
+assign ms_inst_unable   = !ms_valid || ms_data_buff_valid || es_to_ms_data_ok;
 
 
 assign ms_fwd_valid = {4{ ms_to_ws_valid }} & ms_gr_strb;

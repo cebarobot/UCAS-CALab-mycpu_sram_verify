@@ -13,7 +13,7 @@ module exe_stage(
     output                         es_to_ms_valid,
     output [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus  ,
     // from ms
-    input                          ms_data_buff_full,
+    input                          ms_inst_unable,
     // data sram interface
     // output        data_sram_en   ,
     // output [ 3:0] data_sram_wen  ,
@@ -28,7 +28,7 @@ module exe_stage(
     input           data_sram_addr_ok,
     input   [31:0]  data_sram_rdata,
     input           data_sram_data_ok,
-    output          data_sram_data_waiting,     // for pipline clean
+    output          es_data_waiting, 
 
     //block
     output                          es_inst_mfc0_o ,
@@ -173,6 +173,8 @@ reg         es_data_buff_valid;
 reg  [31:0] es_data_buff;
 wire        es_data_ok;
 wire [31:0] es_data;
+
+wire        es_data_sram_data_ok;
 
 assign es_res_from_mem  = es_load_op;
 assign es_res_from_LO   = es_inst_mflo;
@@ -506,7 +508,9 @@ assign data_sram_size   =
 assign data_sram_addr   =
     (es_inst_lwl || es_inst_swl) ? {es_alu_result[31:2], 2'b0} : es_alu_result[31:0];
 
-assign data_sram_data_waiting = es_valid && es_addr_ok && !es_data_ok;
+assign es_data_waiting = es_valid && es_addr_ok && !es_data_ok;
+
+assign es_data_sram_data_ok = data_sram_data_ok && ms_inst_unable;
 
 assign data_sram_wdata  = st_data;
 assign data_sram_wstrb  = st_strb;
@@ -526,15 +530,15 @@ always @ (posedge clk) begin
     if (reset) begin
         es_data_buff_valid  <= 1'b0;
         es_data_buff        <= 32'h0;
-    end else if (ms_data_buff_full && es_addr_ok && data_sram_data_ok && !ms_allowin) begin
-        es_data_buff_valid  <= 1'b1;
-        es_data_buff        <= data_sram_rdata;
     end else if (ms_allowin || no_store) begin
         es_data_buff_valid  <= 1'b0;
         es_data_buff        <= 32'h0;
+    end else if (es_addr_ok && es_data_sram_data_ok && !ms_allowin) begin
+        es_data_buff_valid  <= 1'b1;
+        es_data_buff        <= data_sram_rdata;
     end
 end
-assign es_data_ok   = es_data_buff_valid || (ms_data_buff_full && es_addr_ok && data_sram_data_ok);
+assign es_data_ok   = es_data_buff_valid || (es_addr_ok && es_data_sram_data_ok);
 assign es_data =
     es_data_buff_valid ?    es_data_buff :
     data_sram_rdata;

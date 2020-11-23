@@ -13,8 +13,6 @@ module mycpu_top(
     input  [31:0] inst_sram_rdata,
     input         inst_sram_data_ok,// TODO
     // data sram interface
-    // ! output        data_sram_en,
-    // ! output [ 3:0] data_sram_wen,
     output        data_sram_req,    // TODO
     output        data_sram_wr,     // TODO
     output [ 1:0] data_sram_size,   // TODO
@@ -78,8 +76,8 @@ assign inst_sram_size   = 2'h2;
 assign inst_sram_wstrb  = 4'h0;
 assign inst_sram_wdata  = 32'h0;
 
-wire        inst_waiting_pfs;
-wire        inst_waiting_fs;
+wire        pfs_inst_waiting;
+wire        fs_inst_waiting;
 reg  [1:0]  inst_sram_discard;
 wire        inst_sram_data_ok_discard;
 
@@ -87,7 +85,7 @@ always @ (posedge clk) begin
     if (reset) begin
         inst_sram_discard <= 2'b00;
     end else if (ws_ex || ws_eret) begin
-        inst_sram_discard <= {inst_waiting_pfs, inst_waiting_fs};
+        inst_sram_discard <= {pfs_inst_waiting, fs_inst_waiting};
     end else if (inst_sram_data_ok) begin
         if (inst_sram_discard == 2'b11) begin
             inst_sram_discard <= 2'b01;
@@ -101,8 +99,8 @@ end
 assign inst_sram_data_ok_discard = inst_sram_data_ok && ~|inst_sram_discard;
 
 // data_sram
-wire        data_waiting_es;
-wire        data_waiting_ms;
+wire        es_data_waiting;
+wire        ms_data_waiting;
 reg  [1:0]  data_sram_discard;
 wire        data_sram_data_ok_discard;
 
@@ -110,7 +108,7 @@ always @ (posedge clk) begin
     if (reset) begin
         data_sram_discard <= 2'b00;
     end else if (ws_ex || ws_eret) begin
-        data_sram_discard <= {data_waiting_es, data_waiting_ms};
+        data_sram_discard <= {es_data_waiting, ms_data_waiting};
     end else if (data_sram_data_ok) begin
         if (data_sram_discard == 2'b11) begin
             data_sram_discard <= 2'b01;
@@ -133,17 +131,17 @@ pre_if_stage pre_if_stage(
     .pfs_to_fs_valid        (pfs_to_fs_valid),
     .pfs_to_fs_bus          (pfs_to_fs_bus),
     // from fs
-    .fs_inst_buff_full      (fs_inst_buff_full),
+    .fs_inst_unable         (fs_inst_unable),
     // br_bus
     .br_bus                 (br_bus),
     .fs_valid               (fs_valid),
     // inst_ram interface
-    .inst_sram_req           (inst_sram_req),
-    .inst_sram_addr          (inst_sram_addr),
-    .inst_sram_addr_ok       (inst_sram_addr_ok),
-    .inst_sram_rdata          (inst_sram_rdata),
-    .inst_sram_data_ok       (inst_sram_data_ok_discard),
-    .inst_sram_data_waiting  (inst_waiting_pfs),
+    .inst_sram_req          (inst_sram_req),
+    .inst_sram_addr         (inst_sram_addr),
+    .inst_sram_addr_ok      (inst_sram_addr_ok),
+    .inst_sram_rdata        (inst_sram_rdata),
+    .inst_sram_data_ok      (inst_sram_data_ok_discard),
+    .pfs_inst_waiting       (pfs_inst_waiting),
     .ws_eret                (ws_eret),
     .ws_ex                  (ws_ex),
     .cp0_epc                (cp0_epc)
@@ -163,12 +161,12 @@ if_stage if_stage(
     .fs_to_ds_valid         (fs_to_ds_valid),
     .fs_to_ds_bus           (fs_to_ds_bus),
     // to pfs
-    .fs_inst_buff_full      (fs_inst_buff_full),
+    .fs_inst_unable         (fs_inst_unable),
     .fs_valid_o             (fs_valid),
     // inst_ram interface
-    .inst_sram_rdata          (inst_sram_rdata),
-    .inst_sram_data_ok       (inst_sram_data_ok_discard),
-    .inst_sram_data_waiting  (inst_waiting_fs),
+    .inst_sram_rdata        (inst_sram_rdata),
+    .inst_sram_data_ok      (inst_sram_data_ok_discard),
+    .fs_inst_waiting        (fs_inst_waiting),
     //exception
     .ws_ex                  (ws_ex),
     .ws_eret                (ws_eret),
@@ -218,7 +216,7 @@ exe_stage exe_stage(
     .es_to_ms_valid         (es_to_ms_valid ),
     .es_to_ms_bus           (es_to_ms_bus   ),
     //from ms
-    .ms_data_buff_full      (ms_data_buff_full),
+    .ms_inst_unable         (ms_inst_unable ),
     // data sram interface
     .data_sram_req          (data_sram_req  ),
     .data_sram_wr           (data_sram_wr   ),
@@ -229,7 +227,7 @@ exe_stage exe_stage(
     .data_sram_addr_ok      (data_sram_addr_ok),
     .data_sram_rdata        (data_sram_rdata),
     .data_sram_data_ok      (data_sram_data_ok_discard),
-    .data_sram_data_waiting (data_waiting_es),
+    .es_data_waiting        (es_data_waiting),
     // forward & block
     .es_fwd_blk_bus         (es_fwd_blk_bus ),
     //exception & block
@@ -241,31 +239,31 @@ exe_stage exe_stage(
 );
 // MEM stage
 mem_stage mem_stage(
-    .clk            (clk            ),
-    .reset          (reset          ),
+    .clk                    (clk            ),
+    .reset                  (reset          ),
     //allowin
-    .ws_allowin     (ws_allowin     ),
-    .ms_allowin     (ms_allowin     ),
+    .ws_allowin             (ws_allowin     ),
+    .ms_allowin             (ms_allowin     ),
     //from es
-    .es_to_ms_valid (es_to_ms_valid ),
-    .es_to_ms_bus   (es_to_ms_bus   ),
+    .es_to_ms_valid         (es_to_ms_valid ),
+    .es_to_ms_bus           (es_to_ms_bus   ),
     //to ws
-    .ms_to_ws_valid (ms_to_ws_valid ),
-    .ms_to_ws_bus   (ms_to_ws_bus   ),
+    .ms_to_ws_valid         (ms_to_ws_valid ),
+    .ms_to_ws_bus           (ms_to_ws_bus   ),
     //to es
-    .ms_data_buff_full  (ms_data_buff_full),
+    .ms_inst_unable         (ms_inst_unable ),
     //from data-sram
     .data_sram_rdata        (data_sram_rdata),
     .data_sram_data_ok      (data_sram_data_ok_discard),
-    .data_sram_data_waiting (data_waiting_ms),
+    .ms_data_waiting        (ms_data_waiting),
     // forward & block
-    .ms_fwd_blk_bus (ms_fwd_blk_bus),
+    .ms_fwd_blk_bus         (ms_fwd_blk_bus),
     //exception & block
-    .ws_ex          (ws_ex),
-    .ws_eret        (ws_eret),
-    .ms_ex_o        (ms_ex),
-    .ms_eret        (ms_eret),
-    .ms_inst_mfc0_o (ms_inst_mfc0)
+    .ws_ex                  (ws_ex),
+    .ws_eret                (ws_eret),
+    .ms_ex_o                (ms_ex),
+    .ms_eret                (ms_eret),
+    .ms_inst_mfc0_o         (ms_inst_mfc0)
 );
 // WB stage
 wb_stage wb_stage(

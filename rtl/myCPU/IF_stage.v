@@ -14,13 +14,13 @@ module if_stage(
     output [`FS_TO_DS_BUS_WD -1:0]  fs_to_ds_bus   ,
 
     // to pfs
-    output          fs_inst_buff_full,
+    output          fs_inst_unable,
     output          fs_valid_o,
 
     // inst_ram interface
     input   [31:0]  inst_sram_rdata,
     input           inst_sram_data_ok,
-    output          inst_sram_data_waiting,      // for pipeline clean
+    output          fs_inst_waiting, 
 
     //exception
     input           ws_eret,
@@ -94,13 +94,13 @@ assign fs_inst =
     fs_inst_buff_valid ?    fs_inst_buff    :
     inst_sram_rdata;
 
-assign fs_inst_buff_full = fs_inst_buff_valid;
 assign fs_valid_o = fs_valid;
 
-assign inst_sram_data_waiting    = fs_valid && !fs_inst_ok;
+assign fs_inst_waiting  = fs_valid && !fs_inst_ok;
+assign fs_inst_unable   = !fs_valid || fs_inst_buff_valid || pfs_to_fs_inst_ok;
 
 // lab9
-// ? maybe need to move to pre_IF
+// instruction fetch exceptions are handled here
 wire addr_error;
 assign addr_error = (fs_pc[1:0] != 2'b0);
 assign fs_ex = addr_error && fs_valid;

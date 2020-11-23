@@ -39,13 +39,12 @@ module id_stage(
 reg         ds_valid   ;
 wire        ds_ready_go;
 
-wire [31                 :0] fs_pc;
 reg  [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus_r;
-assign fs_pc = fs_to_ds_bus[31:0];
 
 wire [31:0] fs_to_ds_badvaddr;
 wire [31:0] ds_inst;
 wire [31:0] ds_pc  ;
+wire [31:0] bd_pc;
 wire        ds_ex;
 wire [31:0] ds_badvaddr;
 wire [ 4:0] ds_excode;
@@ -532,9 +531,11 @@ assign br_taken = (
     inst_jalr
 ) && ds_valid;
 
-assign br_target = (inst_beq || inst_bne || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal) ? (fs_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
+assign bd_pc = ds_pc + 32'h4;
+
+assign br_target = (inst_beq || inst_bne || inst_bgez || inst_bgtz || inst_blez || inst_bltz || inst_bgezal || inst_bltzal) ? (bd_pc + {{14{imm[15]}}, imm[15:0], 2'b0}) :
                    (inst_jr || inst_jalr)              ? rs_value :
-                  /*inst_jal*/              {fs_pc[31:28], jidx[25:0], 2'b0};
+                  /*inst_jal*/              {bd_pc[31:28], jidx[25:0], 2'b0};
 
 
 //lab9
