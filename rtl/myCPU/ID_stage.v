@@ -268,8 +268,6 @@ assign ds_to_es_bus = {
     ds_pc          //31 :0
 };
 
-//assign ds_ex = (inst_syscall)? 1 : 0;
-
 wire    mfc0_block;
 assign mfc0_block = (es_inst_mfc0 && (es_rf_dest == rs || es_rf_dest == rt)) ||
                     (ms_inst_mfc0 && (ms_rf_dest == rs || ms_rf_dest == rt)) ||
@@ -283,6 +281,8 @@ assign ds_allowin     = !ds_valid || ds_ready_go && es_allowin;
 assign ds_to_es_valid = ds_valid && ds_ready_go && !ws_eret && !ws_ex;
 always @(posedge clk) begin
     if (reset) begin
+        ds_valid <= 1'b0;
+    end else if (ws_ex || ws_eret) begin
         ds_valid <= 1'b0;
     end else if (ds_allowin) begin
         ds_valid <= fs_to_ds_valid;
@@ -503,6 +503,8 @@ assign ds_is_bd = ds_valid && ds_is_bd_r;
 
 always @ (posedge clk) begin
     if (reset) begin
+        ds_is_bd_r <= 1'b0;
+    end else if (ws_eret || ws_ex) begin
         ds_is_bd_r <= 1'b0;
     end else if (ds_to_es_valid && es_allowin) begin
         ds_is_bd_r <= ds_is_branch;

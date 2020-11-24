@@ -120,10 +120,10 @@ assign bd_done      = bd_done_r || bd_done_w;
 always @ (posedge clk) begin
     if (reset) begin
         seq_pc <= 32'h_bfc00000;
+    end else if (ws_ex) begin
+        seq_pc <= `EX_ENTRY;
     end else if (ws_eret) begin
         seq_pc <= cp0_epc;
-    end else if (ws_eret) begin
-        seq_pc <= `EX_ENTRY;
     end else if (pfs_ready_go && fs_allowin) begin
         seq_pc <= pfs_pc + 32'h4;
     end
@@ -141,7 +141,7 @@ assign inst_sram_req =
     !pfs_addr_ok_r && 
     !(bd_done && br_stall) && 
     !ws_eret && !ws_ex;
-assign inst_sram_addr   = pfs_pc;
+assign inst_sram_addr   = {pfs_pc[31:2], 2'b0};
 assign pfs_inst_waiting = pfs_addr_ok && !pfs_inst_ok;
 
 assign pfs_inst_sram_data_ok = inst_sram_data_ok && fs_inst_unable;

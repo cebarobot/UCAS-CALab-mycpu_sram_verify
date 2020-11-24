@@ -65,6 +65,8 @@ assign fs_to_ds_valid =  fs_valid && fs_ready_go && !ws_eret && !ws_ex;
 always @(posedge clk) begin
     if (reset) begin
         fs_valid <= 1'b0;
+    end else if (ws_ex || ws_eret) begin
+        fs_valid <= 1'b0;
     end else if (fs_allowin) begin
         fs_valid <= pfs_to_fs_valid;
     end
@@ -103,7 +105,7 @@ assign fs_inst_unable   = !fs_valid || fs_inst_buff_valid || pfs_to_fs_inst_ok;
 // instruction fetch exceptions are handled here
 wire addr_error;
 assign addr_error = (fs_pc[1:0] != 2'b0);
-assign fs_ex = addr_error && fs_valid;
+assign fs_ex = fs_valid && addr_error;
 assign fs_badvaddr = fs_pc;
 
 endmodule

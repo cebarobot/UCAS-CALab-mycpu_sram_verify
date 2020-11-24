@@ -150,8 +150,9 @@ assign ms_to_ws_valid = ms_valid && ms_ready_go && !ws_eret && !ws_ex;
 always @(posedge clk) begin
     if (reset) begin
         ms_valid <= 1'b0;
-    end
-    else if (ms_allowin) begin
+    end else if (ws_ex || ws_eret) begin
+        ms_valid <= 1'b0;
+    end else if (ms_allowin) begin
         ms_valid <= es_to_ms_valid;
     end
 
@@ -243,7 +244,7 @@ assign ms_data =
     ms_data_buff_valid ?    ms_data_buff    :
     data_sram_rdata;
 
-assign ms_data_waiting  = ms_valid && !ms_data_ok;
+assign ms_data_waiting  = ms_valid && ms_wait_mem && !ms_data_ok;
 assign ms_inst_unable   = !ms_valid || ms_data_buff_valid || es_to_ms_data_ok;
 
 

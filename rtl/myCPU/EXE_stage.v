@@ -370,22 +370,24 @@ end
 
 // LO & HI
 always @ (posedge clk) begin
-    if (reg_LO_we && !no_store) begin
+    if (reg_LO_we) begin
         reg_LO <= reg_LO_wdata;
     end
-    if (reg_HI_we&& !no_store) begin
+    if (reg_HI_we) begin
         reg_HI <= reg_HI_wdata;
     end
 end
 
-assign reg_LO_we =
+assign reg_LO_we = es_valid && !no_store && (
     es_inst_mtlo || es_inst_mult || es_inst_multu ||
     (es_inst_div  && signed_dout_tvalid)          ||
-    (es_inst_divu && unsigned_dout_tvalid);
-assign reg_HI_we =
+    (es_inst_divu && unsigned_dout_tvalid)
+);
+assign reg_HI_we = es_valid && !no_store && (
     es_inst_mthi || es_inst_mult || es_inst_multu ||
     (es_inst_div  && signed_dout_tvalid)          ||
-    (es_inst_divu && unsigned_dout_tvalid);
+    (es_inst_divu && unsigned_dout_tvalid)
+);
 
 assign reg_LO_wdata =
     es_inst_mult    ? signed_mult_res       [31:0]  :
@@ -487,11 +489,6 @@ assign lwr_swr_size =
     ( {2{st_addr == 2'h3}} & 2'h0 );
 
 // SRAM
-// TODO
-// assign data_sram_en    = 1'b1;
-// assign data_sram_wen   = (es_mem_we && !no_store && es_valid)? st_strb : 4'h0;
-// assign data_sram_addr  = {es_alu_result[31:2], 2'b0};
-// assign data_sram_wdata = st_data;
 
 assign data_sram_req = 
     es_valid &&
@@ -556,15 +553,16 @@ assign es_blk_valid = es_valid && es_res_from_mem && !ws_eret && !ws_ex;
 assign es_ready_go    = 
     (es_inst_div  && !ws_eret && !ws_ex) ? signed_dout_tvalid || signed_divider_done :
     (es_inst_divu && !ws_eret && !ws_ex) ? unsigned_dout_tvalid || unsigned_divider_done :
-    (es_mem_we || es_mem_re            ) ? es_addr_ok :
+    (es_mem_we || es_mem_re            ) ? es_addr_ok || es_ex:
     1'b1;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go && !ws_eret && !ws_ex;
 always @(posedge clk) begin
     if (reset) begin
         es_valid <= 1'b0;
-    end
-    else if (es_allowin) begin
+    end else if (ws_ex || ws_eret) begin
+        es_valid <= 1'b0;
+    end else if (es_allowin) begin
         es_valid <= ds_to_es_valid;
     end
 

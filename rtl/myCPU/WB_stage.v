@@ -139,7 +139,7 @@ cp0 u_cp0(
     .wb_excode          (ws_excode),
     .wb_pc              (ws_pc),
     .wb_badvaddr        (ws_badvaddr),
-    .ws_eret         (ws_eret),
+    .ws_eret            (ws_eret),
     .ext_int_in         (ext_int_in),
 
     .cp0_addr           (cp0_addr),
