@@ -44,7 +44,18 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //   > Author      : LOONGSON
 //   > Date        : 2017-08-04
 //*************************************************************************
-`define RANDOM_SEED {7'b1010101,16'h01FF}
+
+// `define RANDOM_SEED {7'b1010101,16'h0000}        // long delay: PASS
+// `define RANDOM_SEED {7'b1010101,16'h3f3c}        // long delay:
+// `define RANDOM_SEED {7'b1010101,16'hc3c3}        // long delay:
+// `define RANDOM_SEED {7'b1010101,16'h03fc}        // long delay:
+
+// `define RANDOM_SEED {7'b1010101,16'h01FF}        // short delay: PASS
+// `define RANDOM_SEED {7'b1010101,16'h03ff}        // short delay
+// `define RANDOM_SEED {7'b1010101,16'hc0ff}        // short delay
+// `define RANDOM_SEED {7'b1010101,16'hfcff}        // short delay
+
+`define RANDOM_SEED {7'b1010101,16'h00ff}        // no delay
 
 `define CR0_ADDR       16'h8000   //32'hbfaf_8000 
 `define CR1_ADDR       16'h8004   //32'hbfaf_8004 
